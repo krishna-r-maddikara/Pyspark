@@ -1,0 +1,56 @@
+PROJECT_NAME 
+ -- scripts
+ -- parm
+ -- Temp
+ -- logs
+
+
+#############Properties File###### properties.sh <Project_location/parm/properties.sh>#############################
+#!/bin/sh
+export spark2_home=/usr/hdp/current/spark2-client/bin
+export spark_master=yarn
+export spark_deploy=cluster
+#export TDCHJAR=/usr/lib/tdch/1.5/lib/teradata-connector-1.5.3.jar,/appl_ware/dsdata/PIP/jdbc/tdgssconfig.jar,/appl_ware/dsdata/PIP/jdbc/terajdbc4.jar
+export TDCHJAR=/appl_ware/dsdata/common/jars/terajdbc4.jar,/appl_ware/dsdata/common/jars/teradata-connector-1.5.5.jar,/appl_ware/dsdata/common/jars/tdgssconfig.jar,/appl_ware/dsdata/common/jars/db2jcc4.jar
+export hive_site=/etc/spark2/2.6.2.0-205/0/hive-site.xml
+export base_dir=<project_location>
+export ScriptNM=pyspark.py
+export numexec=10
+export numcore=3
+export execmem=10G
+export drivermem=15G
+#export support_mail=
+############################################################END of Properties File ####################################
+
+
+############################### Master Script For your Pyspark Code ##################pyspark_test.sh ##################
+#!/bin/sh
+
+source <Project_location/parm/properties.sh>
+
+RUNDATE=`date +%Y%m%d`
+processTag=`date '+%H%M%S'`
+SCRIPTPATH=$base_dir"/scripts"
+LOGPATH=$base_dir"/logs"
+
+batch_date=`TZ="GMT+24" date +'%Y-%m-%d'`
+
+#echo "Starting the <Table_Name> process for Batch Date : $RUNDATE" |  mailx -s "Starting the <Table_Name> process for Batch Date : $RUNDATE" $support_mail;
+
+echo "Starting the <Table_Name> process for Batch Date : $RUNDATE"
+
+$spark2_home/spark-submit --master $spark_master --deploy-mode $spark_deploy --num-executors $numexec --executor-cores $numcore --executor-memory $execmem --driver-memory $drivermem --jars $TDCHJAR --files $hive_site $SCRIPTPATH/$ScriptNM $batch_date >> $LOGPATH/table_name_${RUNDATE}${processTag}.log 2>&1
+
+returnCd=$?
+if [ "$returnCd" -ne "0" ]; then
+
+echo "<Table_Name> Process is failed for Date: $RUNDATE . Check log file for more information" 
+exit $returnCd
+
+else
+
+echo "<Table_Name> Process Successful for Date: $RUNDATE . Check log file for more information" 
+
+fi
+echo "<Table_Name> Process is completed for Date: $RUNDATE "
+########################## End of Process ##########################
